@@ -1,0 +1,4 @@
+TaskMinerAgent: Responsible for mining useful necessary details from the user inputs
+ETAAgent: Based on the task list, infrom the user how long it will take to complete a particular task
+ComplianceAgent: Checks whether the user request is compliant with the company's policy before the TaskMinerAgent can mine the tasks
+PayWallAgent: Checks whether user has enough credits to give tasks to the TaskMinerAgent
