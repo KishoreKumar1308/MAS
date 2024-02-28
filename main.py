@@ -59,18 +59,22 @@ async def chat(user_input, chat_history, _agents = _agents):
     print("~"*50)
 
     master_response = await asyncio.gather(asyncio.create_task(_agents["MasterAgent"].get_response(str(formatted_agent_query), chat_history)))
+    
+    chat_history.append([user_input, master_response[0]])
 
-    return master_response[0]
+    return '',chat_history
     
 
 async def main():
-    iface = gr.ChatInterface(
-        chat,
-        chatbot = gr.Chatbot(layout = "panel",show_copy_button = True),
-        title = "MAS - Multi Agent System",
-    )
+    with gr.Blocks() as demo:
 
-    iface.launch()
+        chatbot = gr.Chatbot(label='MAS - Multi Agent System', height=650, layout = "panel", show_copy_button = True)
+        msg = gr.Textbox()
+        clear = gr.ClearButton([msg, chatbot])
+
+        msg.submit(chat, [msg, chatbot], [msg, chatbot])
+
+    demo.launch()
 
 if __name__ == "__main__":
     asyncio.run(main())

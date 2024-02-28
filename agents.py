@@ -104,6 +104,6 @@ class PayWallAgent(Agent):
         super().__init__(system_prompt)
 
     async def get_response(self, user_input, chat_history):
-        if len(chat_history) > 2:
+        if len(chat_history) > 30:
             return "You have reached the maximum number of free requests. Please subscribe to our premium plan to continue."
         return ""
