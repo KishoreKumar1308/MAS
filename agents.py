@@ -34,12 +34,11 @@ class Agent:
 
 
 class MasterAgent(Agent):
-    def __init__(self, system_prompt, name, role, skills, agent_list):
+    def __init__(self, system_prompt, name, role, skills):
         super().__init__(system_prompt)
         self.name = name
         self.role = role
         self.skills = skills
-        self.agent_list = "\n".join([f"{agent}: {description}" for agent, description in agent_list])
         self.system_prompt = self.set_system_prompt(self.system_prompt)
 
         self.cfg = GPT41106PreviewConfig().__dict__
@@ -48,7 +47,6 @@ class MasterAgent(Agent):
         system_prompt = system_prompt.replace("{name}",self.name)
         system_prompt = system_prompt.replace("{role}",self.role)
         system_prompt = system_prompt.replace("{skills}",", ".join(self.skills))
-        system_prompt = system_prompt.replace("{agents}",self.agent_list)
         return system_prompt
     
 

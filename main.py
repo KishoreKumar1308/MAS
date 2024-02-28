@@ -7,11 +7,11 @@ from utils import get_curent_datetime, read_agent_prompts
 import constants
 
 
-employee = constants.KELLY
+employee = constants.GARRY
 
 agent_prompts = read_agent_prompts(constants.AGENTS.keys())
 _agents = {
-        "MasterAgent": agents.MasterAgent(agent_prompts["MasterAgent"], **employee, agent_list = list(constants.AGENTS.items())),
+        "MasterAgent": agents.MasterAgent(agent_prompts["MasterAgent"], **employee),
         "TaskMinerAgent": agents.TaskMinerAgent(agent_prompts["TaskMinerAgent"], employee["skills"]),
         "ETAAgent": agents.ETAAgent(agent_prompts["ETAAgent"]),
         "ComplianceAgent": agents.ComplianceAgent(agent_prompts["ComplianceAgent"]),
@@ -25,25 +25,17 @@ async def chat(user_input, chat_history, _agents = _agents):
     formatted_query = f"Current Time: {formatted_time} IST User: {user_input}"
     
     print(formatted_query)
-    master_response = await asyncio.gather(asyncio.create_task(_agents["MasterAgent"].get_response(formatted_query, chat_history)))
-    master_response = json.loads(master_response[0])
-
-    print("Master's input to other agents from User Query:")
-    print("#"*50)
-    print(master_response)
-    print("#"*50)
-
     tasks = []
-    tasks.append(asyncio.create_task(_agents["TaskMinerAgent"].get_response(master_response["TaskMinerAgent"], miner_history)))
+    tasks.append(asyncio.create_task(_agents["TaskMinerAgent"].get_response(formatted_query, miner_history)))
 
     for agent in list(constants.AGENTS.keys())[2:]:
-        task = asyncio.create_task(_agents[agent].get_response(master_response[agent], chat_history))
+        task = asyncio.create_task(_agents[agent].get_response(formatted_query, chat_history))
         tasks.append(task)
 
     responses = await asyncio.gather(*tasks)
 
     formatted_responses = responses
-    miner_history.append((master_response["TaskMinerAgent"],formatted_responses[0]))
+    miner_history.append((formatted_query,formatted_responses[0]))
 
     formatted_responses[0] = json.loads(formatted_responses[0])["instructions_for_MasterAgent"]
 
