@@ -3,7 +3,7 @@ import gradio as gr
 import asyncio
 from rich import print
 import agents
-from utils import get_curent_datetime, read_agent_prompts
+from utils import get_curent_datetime, read_agent_prompts, push_to_task_memory
 import constants
 
 
@@ -35,7 +35,11 @@ async def chat(user_input, chat_history, _agents = _agents):
     responses = await asyncio.gather(*tasks)
 
     formatted_responses = responses
-    miner_history.append((formatted_query,formatted_responses[0]))
+    miner_response = formatted_responses[0]
+
+    miner_history.append((formatted_query,miner_response))
+    task_list = json.loads(miner_response)["Task_list"]
+    push_to_task_memory(task_list, constants.TASK_MEMORY)
 
     formatted_responses[0] = json.loads(formatted_responses[0])["instructions_for_MasterAgent"]
 

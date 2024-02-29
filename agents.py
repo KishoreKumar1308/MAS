@@ -15,7 +15,7 @@ class Agent:
         self.cfg = GPT35TurboConfig().__dict__
 
     async def get_response(self, user_input, chat_history):
-        messages = format_message(self.system_prompt, user_input, chat_history)
+        messages = format_message(self.system_prompt, user_input, chat_history, self.__class__.__name__)
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(None, lambda: self.client.chat.completions.create(
             model = self.cfg['model'],
@@ -63,6 +63,7 @@ class TaskMinerAgent(Agent):
         system_prompt = system_prompt.replace("{skills}",", ".join(self.skills))
         return system_prompt
     
+
     async def get_response(self, user_input, chat_history):
         response = await super().get_response(user_input, chat_history)
         print("TASK LIST:")

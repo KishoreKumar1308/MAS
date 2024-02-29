@@ -1,4 +1,6 @@
+import json
 from datetime import datetime
+import constants
 
 def get_curent_datetime() -> str:
     return datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -16,7 +18,7 @@ def read_prompt_file(file_path) -> str:
         return file.read()
 
 
-def format_message(system_prompt: str, user_input: str, chat_history:list)->list:
+def format_message(system_prompt: str, user_input: str, chat_history:list, calling_agent:str)->list:
     formated_messages = [
         {
             'role': 'system',
@@ -30,10 +32,16 @@ def format_message(system_prompt: str, user_input: str, chat_history:list)->list
             'content':message[0]
         })
 
-        formated_messages.append({
-            'role':'assistant',
-            'content':message[1]
-        })
+        if calling_agent == 'TaskMinerAgent':
+            formated_messages.append({
+                'role':'assistant',
+                'content':update_assitant_memory(message[1], constants.TASK_MEMORY)
+            })
+        else:
+            formated_messages.append({
+                'role':'assistant',
+                'content':message[1]
+            })
 
     formated_messages.append(
         {
@@ -43,3 +51,18 @@ def format_message(system_prompt: str, user_input: str, chat_history:list)->list
     )
 
     return formated_messages
+
+
+def push_to_task_memory(task_list:list,file_path:str):
+    with open(file_path, 'w') as file:
+        json.dump(task_list, file, indent=4)
+
+
+def update_assitant_memory(assistant_message:str, file_path:str):
+    with open(file_path, 'r') as file:
+        task_memory = json.load(file)
+
+    assistant_message = json.loads(assistant_message)
+    assistant_message['Task_list'] = task_memory
+
+    return json.dumps(assistant_message, indent=4)
