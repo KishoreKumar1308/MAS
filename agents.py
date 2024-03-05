@@ -1,5 +1,6 @@
 import openai
 import asyncio
+import json
 from profanity_check import predict_prob
 from rich import print_json
 from constants import OPEN_AI_KEY
@@ -69,7 +70,7 @@ class TaskMinerAgent(Agent):
         print("TASK LIST:")
         print("====================================")
         print(user_input,chat_history)
-        print_json(data=response)
+        print_json(data=json.loads(str(response)))
         print("====================================")
         return response
    
