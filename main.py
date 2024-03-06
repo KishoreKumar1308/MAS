@@ -1,7 +1,7 @@
 import json
 import gradio as gr
 import asyncio
-from rich import print
+from rich import print,print_json
 import agents
 from utils import get_curent_datetime, read_agent_prompts, push_to_task_memory
 import constants
@@ -10,13 +10,16 @@ import constants
 employee = constants.GARRY
 
 agent_prompts = read_agent_prompts(constants.AGENTS.keys())
-_agents = {
-        "MasterAgent": agents.MasterAgent(agent_prompts["MasterAgent"], **employee),
-        "TaskMinerAgent": agents.TaskMinerAgent(agent_prompts["TaskMinerAgent"], employee["skills"]),
-        "ETAAgent": agents.ETAAgent(agent_prompts["ETAAgent"]),
-        "ComplianceAgent": agents.ComplianceAgent(agent_prompts["ComplianceAgent"]),
-        "PayWallAgent": agents.PayWallAgent(agent_prompts["PayWallAgent"])
-}
+
+_agents = {}
+
+for agent in constants.AGENTS.keys():
+    if agent == "MasterAgent":
+        _agents[agent] = getattr(agents, agent)(agent_prompts[agent],**employee)
+    elif agent == "TaskMinerAgent":
+        _agents[agent] = getattr(agents, agent)(agent_prompts[agent],employee["skills"])
+    else:
+        _agents[agent] = getattr(agents, agent)(agent_prompts[agent])
 
 miner_history = []
 
@@ -51,7 +54,7 @@ async def chat(user_input, chat_history, _agents = _agents):
 
     print("Agent's Input for master to generate User response:")
     print("~"*50)
-    print(formatted_agent_query)
+    print_json(data = json.loads(str(formatted_agent_query)))
     print("~"*50)
 
     master_response = await asyncio.gather(asyncio.create_task(_agents["MasterAgent"].get_response(str(formatted_agent_query), chat_history)))
