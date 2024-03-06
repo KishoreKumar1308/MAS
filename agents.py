@@ -3,20 +3,49 @@ import asyncio
 import json
 from profanity_check import predict_prob
 from rich import print_json
-from constants import OPEN_AI_KEY
+import constants
 from config import GPT35TurboConfig, GPT41106PreviewConfig
-from utils import format_message
+from utils import update_assitant_memory
 
 
 class Agent:
     def __init__(self, system_prompt):
         self.system_prompt = system_prompt
-        self.client = openai.Client(api_key = OPEN_AI_KEY)
+        self.client = openai.Client(api_key = constants.OPEN_AI_KEY)
 
         self.cfg = GPT35TurboConfig().__dict__
 
+
+    def format_message(self, system_prompt: str, user_input: str, chat_history:list)->list:
+        formated_messages = [
+            {
+                'role': 'system',
+                'content': f'{system_prompt}'
+            }
+        ]
+        
+        for message in chat_history:
+            formated_messages.append({
+                'role':'user',
+                'content':message[0]
+            })
+
+            formated_messages.append({
+                'role':'assistant',
+                'content':message[1]
+            })
+
+        formated_messages.append(
+            {
+                'role':'user',
+                'content':user_input
+            }
+        )
+
+        return formated_messages
+
     async def get_response(self, user_input, chat_history):
-        messages = format_message(self.system_prompt, user_input, chat_history, self.__class__.__name__)
+        messages = self.format_message(self.system_prompt, user_input, chat_history)
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(None, lambda: self.client.chat.completions.create(
             model = self.cfg['model'],
@@ -59,6 +88,36 @@ class TaskMinerAgent(Agent):
 
         self.cfg = GPT41106PreviewConfig().__dict__
 
+
+    def format_message(self, system_prompt: str, user_input: str, chat_history: list) -> list:
+        formated_messages = [
+        {
+            'role': 'system',
+            'content': f'{system_prompt}'
+        }
+        ]
+
+        if len(chat_history) > 0:
+            user_messages = [messages[0] for messages in chat_history[-10:]]
+            formated_messages.append({
+                'role':'user',
+                'content':f'Here are the last 10 user messages: {user_messages}'
+            })
+
+            formated_messages.append({
+                'role':'assistant',
+                'content':update_assitant_memory(chat_history[-1][1], constants.TASK_MEMORY)
+            })
+
+        formated_messages.append(
+        {
+            'role':'user',
+            'content':user_input
+        }
+        )
+
+        return formated_messages
+         
 
     def set_system_prompt(self,system_prompt):
         system_prompt = system_prompt.replace("{skills}",", ".join(self.skills))
