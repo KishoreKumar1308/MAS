@@ -54,7 +54,7 @@ async def chat(user_input, chat_history, _agents = _agents):
 
     print("Agent's Input for master to generate User response:")
     print("~"*50)
-    print_json(data = json.loads(str(formatted_agent_query)))
+    print_json(data = formatted_agent_query)
     print("~"*50)
 
     master_response = await asyncio.gather(asyncio.create_task(_agents["MasterAgent"].get_response(str(formatted_agent_query), chat_history)))
