@@ -30,11 +30,17 @@ async def chat(user_input, chat_history, _agents = _agents):
     
     print(formatted_query)
 
-    if len(chat_history) > 0 and len(chat_history) % (constants.K - 1) == 0:
-        created_memory = await asyncio.gather(asyncio.create_task(_agents["MemoryAgent"].get_response(str(chat_history[-constants.K:]), [])))
-        _agents["MemoryAgent"].add_to_collection([str(created_memory)])
+    if len(chat_history) > 0 and len(chat_history) % (constants.K) == 0:
+        k_history = "\n".join([messages[0] for messages in chat_history[-constants.K:]])
+        created_memory = await asyncio.gather(asyncio.create_task(_agents["MemoryAgent"].get_response(k_history, [])))
+        _agents["MemoryAgent"].add_to_collection([created_memory[0]])
 
-    retrieved_memory = _agents["MemoryAgent"].retrieve_data(user_input,2)
+    retrieved_memory = _agents["MemoryAgent"].retrieve_data(user_input,2)['documents']
+
+    try:
+        retrieved_memory = "\n".join([memory for memory in retrieved_memory[0]])
+    except:
+        retrieved_memory = ""
 
     tasks = []
     tasks.append(asyncio.create_task(_agents["TaskMinerAgent"].get_response(formatted_query, miner_history, retrieved_memory)))

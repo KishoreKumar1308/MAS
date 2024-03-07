@@ -3,7 +3,9 @@ import asyncio
 import json
 from profanity_check import predict_prob
 from rich import print_json
+from rich import print as rprint
 import chromadb
+from chromadb.config import Settings
 import constants
 from config import GPT35TurboConfig, GPT41106PreviewConfig
 from utils import update_assitant_memory,get_curent_datetime
@@ -84,8 +86,8 @@ class MasterAgent(Agent):
 class MemoryAgent(Agent):
     def __init__(self, system_prompt):
         super().__init__(system_prompt)
-        self.chroma_client = chromadb.Client()
-        self.collection = self.chroma_client.get_or_create_collection(name = "meomry",metadata = {"hnsw:space": "cosine"})
+        self.chroma_client = chromadb.PersistentClient(path = "./MAS-Memory")
+        self.collection = self.chroma_client.get_or_create_collection(name = "memory",metadata = {"hnsw:space": "cosine"})
 
     def add_to_collection(self, docs):
         self.collection.add(documents = docs,ids = get_curent_datetime())
@@ -95,9 +97,6 @@ class MemoryAgent(Agent):
                     query_texts=[query],
                     n_results=number_of_documents)   
         return results
-    
-    def get_data(self):
-        return self.collection.get()
 
 
 class TaskMinerAgent(Agent):
@@ -110,8 +109,7 @@ class TaskMinerAgent(Agent):
 
 
     def format_message(self, system_prompt: str, user_input: str, chat_history: list, memory:str) -> list:
-        system_prompt = system_prompt.replace("{memory}",str(memory["documents"]))
-
+        system_prompt = system_prompt.replace("{memory}",memory)
         formated_messages = [
         {
             'role': 'system',
@@ -120,10 +118,10 @@ class TaskMinerAgent(Agent):
         ]
 
         if len(chat_history) > 0:
-            user_messages = [messages[0] for messages in chat_history[-10:]]
+            user_messages = "\n".join([messages[0] for messages in chat_history[-constants.K:]])
             formated_messages.append({
                 'role':'user',
-                'content':f'Here are the last 10 user messages: {user_messages}'
+                'content':f'Here are the last {constants.K} user messages: {user_messages}'
             })
 
             formated_messages.append({
@@ -166,7 +164,6 @@ class TaskMinerAgent(Agent):
 
         print("TASK LIST:")
         print("====================================")
-        print(user_input,chat_history)
         print_json(data=json.loads(str(out)))
         print("====================================")
 

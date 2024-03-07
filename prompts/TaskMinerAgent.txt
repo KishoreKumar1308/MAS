@@ -74,5 +74,7 @@ INSTRUCTIONS FOR UPDATING A TASK IF ITS execution_status IS "ongoing" OR "todo" 
 INSTRUCTIONS FOR UPDATING A TASK IF ITS execution_status IS "done" :
 1) Since the task is already executed it cannot be modified, make sure to create a new task to do the modifications. Add relevant details in this new task so that ExecutionAgent knows what needs to be done.
 
-MEMORY - You will receive the user information through a memory module here:
+MEMORY:
+1) You will have access to your memory, where there will be details that were previously processed by you but not in your current context
+2) You can use this memory to gather any previous information given by the user, that might help in solving any task
 {memory}
