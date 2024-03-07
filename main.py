@@ -13,6 +13,7 @@ agent_prompts = read_agent_prompts(constants.AGENTS.keys())
 
 _agents = {}
 
+# Creating a dict of agent instances using their string names
 for agent in constants.AGENTS.keys():
     if agent == "MasterAgent":
         _agents[agent] = getattr(agents, agent)(agent_prompts[agent],**employee)
@@ -28,10 +29,17 @@ async def chat(user_input, chat_history, _agents = _agents):
     formatted_query = f"Current Time: {formatted_time} IST User: {user_input}"
     
     print(formatted_query)
-    tasks = []
-    tasks.append(asyncio.create_task(_agents["TaskMinerAgent"].get_response(formatted_query, miner_history)))
 
-    for agent in list(constants.AGENTS.keys())[2:]:
+    if len(chat_history) > 0 and len(chat_history) % (constants.K - 1) == 0:
+        created_memory = await asyncio.gather(asyncio.create_task(_agents["MemoryAgent"].get_response(str(chat_history[-constants.K:]), [])))
+        _agents["MemoryAgent"].add_to_collection([str(created_memory)])
+
+    retrieved_memory = _agents["MemoryAgent"].retrieve_data(user_input,2)
+
+    tasks = []
+    tasks.append(asyncio.create_task(_agents["TaskMinerAgent"].get_response(formatted_query, miner_history, retrieved_memory)))
+
+    for agent in list(constants.AGENTS.keys())[3:]:
         task = asyncio.create_task(_agents[agent].get_response(formatted_query, chat_history))
         tasks.append(task)
 
@@ -49,7 +57,7 @@ async def chat(user_input, chat_history, _agents = _agents):
     formatted_agent_query = {}
     formatted_agent_query["user"] = formatted_query
 
-    for agent, response in zip(list(constants.AGENTS.keys())[1:], formatted_responses):
+    for agent, response in zip(list(constants.AGENTS.keys())[2:], formatted_responses):
         formatted_agent_query[agent] = response
 
     print("Agent's Input for master to generate User response:")

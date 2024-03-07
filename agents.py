@@ -3,9 +3,10 @@ import asyncio
 import json
 from profanity_check import predict_prob
 from rich import print_json
+import chromadb
 import constants
 from config import GPT35TurboConfig, GPT41106PreviewConfig
-from utils import update_assitant_memory
+from utils import update_assitant_memory,get_curent_datetime
 
 
 class Agent:
@@ -80,6 +81,25 @@ class MasterAgent(Agent):
         return system_prompt
     
 
+class MemoryAgent(Agent):
+    def __init__(self, system_prompt):
+        super().__init__(system_prompt)
+        self.chroma_client = chromadb.Client()
+        self.collection = self.chroma_client.get_or_create_collection(name = "meomry",metadata = {"hnsw:space": "cosine"})
+
+    def add_to_collection(self, docs):
+        self.collection.add(documents = docs,ids = get_curent_datetime())
+
+    def retrieve_data(self,query,number_of_documents):
+        results = self.collection.query(
+                    query_texts=[query],
+                    n_results=number_of_documents)   
+        return results
+    
+    def get_data(self):
+        return self.collection.get()
+
+
 class TaskMinerAgent(Agent):
     def __init__(self, system_prompt, skills):
         super().__init__(system_prompt)
@@ -89,7 +109,9 @@ class TaskMinerAgent(Agent):
         self.cfg = GPT41106PreviewConfig().__dict__
 
 
-    def format_message(self, system_prompt: str, user_input: str, chat_history: list) -> list:
+    def format_message(self, system_prompt: str, user_input: str, chat_history: list, memory:str) -> list:
+        system_prompt = system_prompt.replace("{memory}",str(memory["documents"]))
+
         formated_messages = [
         {
             'role': 'system',
@@ -116,6 +138,8 @@ class TaskMinerAgent(Agent):
         }
         )
 
+        print("--------->>>>>>>> TASK MINER")
+        print_json(data = formated_messages)
         return formated_messages
          
 
@@ -124,14 +148,29 @@ class TaskMinerAgent(Agent):
         return system_prompt
     
 
-    async def get_response(self, user_input, chat_history):
-        response = await super().get_response(user_input, chat_history)
+    async def get_response(self, user_input, chat_history, memory):
+        messages = self.format_message(self.system_prompt, user_input, chat_history, memory)
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(None, lambda: self.client.chat.completions.create(
+            model = self.cfg['model'],
+            messages = messages,
+            temperature = self.cfg['temprature'],
+            max_tokens = self.cfg['max_tokens'],
+            top_p = self.cfg['top_p']
+        ))
+        
+        out = dict(response)
+        out = dict(out['choices'][0])
+        out = dict(out['message'])
+        out = out['content']
+
         print("TASK LIST:")
         print("====================================")
         print(user_input,chat_history)
-        print_json(data=json.loads(str(response)))
+        print_json(data=json.loads(str(out)))
         print("====================================")
-        return response
+
+        return out
    
 
 # Hardcoded for now, to be implemented in future

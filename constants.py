@@ -4,9 +4,11 @@ load_dotenv()
 
 OPEN_AI_KEY = os.getenv("OPEN_AI_API")
 TASK_MEMORY = "task_memory.json"
+K = 2
 
 AGENTS = {
     "MasterAgent": "Responsible for managing the other agents and providing the final output to the user",
+    "MemoryAgent": "Responsible for extracting key user information from conversation and store it in a Vector Database",
     "TaskMinerAgent": "Responsible for mining useful necessary details from the user inputs",
     "ETAAgent": "Responsible for providing the estimated time to complete the task",
     "ComplianceAgent": "Responsible for ensuring that the inputs are compliant with the company's policies",
